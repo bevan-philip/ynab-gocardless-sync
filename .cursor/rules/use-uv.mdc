@@ -1,0 +1,15 @@
+---
+description: Use UV to add packages and invoke Python
+globs: 
+alwaysApply: false
+---
+
+# Use UV
+
+To use Python, use the UV library to add packages to the proejct, and to use invoke Python.
+
+examples:
+    - input: run a script called 'hello.py'
+      output: `uv run hello.py`
+    - input: add the package httpx to the project
+      output: `uv add httpx`

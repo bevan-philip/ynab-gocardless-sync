@@ -1,0 +1,16 @@
+[project]
+name = "ynab-chase-sync"
+version = "0.1.0"
+description = "Sync Chase bank transactions to YNAB using GoCardless"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "keyring>=25.6.0",
+    "pyyaml>=6.0.2",
+    "click>=8.1.7",
+]
+
+[project.scripts]
+ynab-sync = "ynab_sync:cli"
+
