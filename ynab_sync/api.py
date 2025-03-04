@@ -152,4 +152,30 @@ class GoCardlessClient:
                 headers=self.headers
             )
             response.raise_for_status()
+            return response.json()
+
+    async def get_account_details(self, account_id: str) -> Dict[str, Any]:
+        """Get details for a specific account."""
+        if not self.access_token:
+            await self.get_access_token()
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.BASE_URL}/accounts/{account_id}/",
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def get_account_balances(self, account_id: str) -> Dict[str, Any]:
+        """Get balances for a specific account."""
+        if not self.access_token:
+            await self.get_access_token()
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.BASE_URL}/accounts/{account_id}/balances/",
+                headers=self.headers
+            )
+            response.raise_for_status()
             return response.json() 

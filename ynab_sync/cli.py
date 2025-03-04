@@ -125,10 +125,26 @@ def map_accounts():
         bank_accounts = []
         for account_id in requisition["accounts"]:
             account_details = asyncio.run(client.get_account_details(account_id))
+            balances = asyncio.run(client.get_account_balances(account_id))
+            
+            # Get the most recent balance
+            current_balance = None
+            if balances.get("balances"):
+                # Sort by reference date and get the most recent
+                latest_balance = sorted(
+                    balances["balances"],
+                    key=lambda x: x.get("referenceDate", ""),
+                    reverse=True
+                )[0]
+                current_balance = latest_balance["balanceAmount"]
+            
             bank_accounts.append({
                 "id": account_id,
-                "name": account_details.get("name", "Unknown Account"),
-                "iban": account_details.get("iban", "No IBAN")
+                "name": account_details.get("ownerName", "Unknown Account"),
+                "iban": account_details.get("iban", "No IBAN"),
+                "currency": account_details.get("currency", "Unknown"),
+                "status": account_details.get("status", "Unknown"),
+                "balance": current_balance
             })
 
         # Initialize or get existing mappings
@@ -136,7 +152,13 @@ def map_accounts():
         
         click.echo("\n=== Account Mapping Configuration ===")
         for bank_account in bank_accounts:
-            click.echo(f"\nBank Account: {bank_account['name']} ({bank_account['iban']})")
+            click.echo(f"\nBank Account:")
+            click.echo(f"  Name: {bank_account['name']}")
+            click.echo(f"  IBAN: {bank_account['iban']}")
+            click.echo(f"  Currency: {bank_account['currency']}")
+            click.echo(f"  Status: {bank_account['status']}")
+            if bank_account['balance']:
+                click.echo(f"  Balance: {bank_account['balance']['amount']} {bank_account['balance']['currency']}")
             ynab_account_id = click.prompt(
                 "Enter YNAB Account ID for this bank account",
                 type=str,

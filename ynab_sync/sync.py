@@ -25,7 +25,6 @@ def prepare_ynab_transactions(
             "date": txn["bookingDate"],  # Already in YYYY-MM-DD format
             "amount": int(amount * 1000),  # Convert to milliunits
             "payee_name": txn.get("debtorName", txn.get("remittanceInformationUnstructured", "Unknown")),
-            "import_id": f"gc:{txn['transactionId']}"
         })
     
     return ynab_transactions
