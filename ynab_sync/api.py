@@ -1,6 +1,29 @@
 import httpx
-from datetime import datetime
+import logging
 from typing import List, Dict, Any, Optional
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
+def log_and_raise_for_status(response: httpx.Response) -> None:
+    """
+    Check the response status and raise an exception if needed.
+    If the response indicates an error, log the response content before raising.
+    """
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        # Log the error with detailed information
+        logger.error(
+            f"HTTP Error: {e.response.status_code} {e.response.reason_phrase}\n"
+            f"Request URL: {e.response.url}\n"
+            f"Request Method: {e.response.request.method}\n"
+            f"Request Headers: {e.response.request.headers}\n"
+            f"Response Headers: {e.response.headers}\n"
+            f"Response Content: {e.response.text}"
+        )
+        # Re-raise the exception
+        raise
 
 class YNABClient:
     BASE_URL = "https://api.ynab.com/v1"
@@ -20,7 +43,7 @@ class YNABClient:
                 headers=self.headers,
                 json={"transactions": transactions}
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
 class GoCardlessClient:
@@ -45,7 +68,7 @@ class GoCardlessClient:
                     "secret_key": self.secret_key
                 }
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             data = response.json()
             self.access_token = data["access"]
             self.headers["Authorization"] = f"Bearer {self.access_token}"
@@ -62,7 +85,7 @@ class GoCardlessClient:
                 headers=self.headers,
                 params={"country": country_code}
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
     async def create_end_user_agreement(
@@ -90,7 +113,7 @@ class GoCardlessClient:
                 headers=self.headers,
                 json=payload
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
     async def create_requisition(
@@ -124,8 +147,7 @@ class GoCardlessClient:
                 headers=self.headers,
                 json=payload
             )
-            print(f"{response.json()=}")
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
     async def get_requisition(self, requisition_id: str) -> Dict[str, Any]:
@@ -138,7 +160,7 @@ class GoCardlessClient:
                 f"{self.BASE_URL}/requisitions/{requisition_id}/",
                 headers=self.headers
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
     async def get_account_transactions(self, account_id: str) -> Dict[str, Any]:
@@ -151,7 +173,7 @@ class GoCardlessClient:
                 f"{self.BASE_URL}/accounts/{account_id}/transactions/",
                 headers=self.headers
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
     async def get_account_details(self, account_id: str) -> Dict[str, Any]:
@@ -164,7 +186,7 @@ class GoCardlessClient:
                 f"{self.BASE_URL}/accounts/{account_id}/",
                 headers=self.headers
             )
-            response.raise_for_status()
+            log_and_raise_for_status(response)
             return response.json()
 
     async def get_account_balances(self, account_id: str) -> Dict[str, Any]:
@@ -177,5 +199,5 @@ class GoCardlessClient:
                 f"{self.BASE_URL}/accounts/{account_id}/balances/",
                 headers=self.headers
             )
-            response.raise_for_status()
-            return response.json() 
+            log_and_raise_for_status(response)
+            return response.json()

@@ -1,14 +1,24 @@
 import click
 import asyncio
+import logging
 from typing import Optional, Dict, Any
 
+from .logging_config import configure_logging
 from .config import load_config, save_config
 from .sync import sync_transactions
 from .api import GoCardlessClient
 
 @click.group()
-def cli():
+@click.option('--verbose', '-v', count=True, help='Increase verbosity (can be used multiple times)')
+def cli(verbose):
     """YNAB Bank Sync Tool - Sync transactions from Chase to YNAB."""
+    # Configure logging based on verbosity
+    if verbose == 0:
+        configure_logging(logging.WARNING)
+    elif verbose == 1:
+        configure_logging(logging.INFO)
+    else:
+        configure_logging(logging.DEBUG)
     pass
 
 @cli.command()
