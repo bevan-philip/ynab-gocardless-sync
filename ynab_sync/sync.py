@@ -16,14 +16,10 @@ def prepare_ynab_transactions(
     # Process booked transactions
     for txn in bank_transactions.get("transactions", {}).get("booked", []):
         # Convert amount from string to float and handle negative amounts
-        amount = float(txn["transactionAmount"]["amount"])
-        if amount < 0:
-            amount = abs(amount)  # YNAB expects positive amounts for expenses
-            
         ynab_transactions.append({
             "account_id": account_id,
             "date": txn["bookingDate"],  # Already in YYYY-MM-DD format
-            "amount": int(amount * 1000),  # Convert to milliunits
+            "amount": int(float(txn["transactionAmount"]["amount"]) * 1000),  # Convert to milliunits
             "payee_name": txn.get("debtorName", txn.get("remittanceInformationUnstructured", "Unknown")),
         })
     
@@ -35,7 +31,7 @@ async def sync_transactions() -> Dict[str, int]:
     
     # Initialize API clients
     ynab_client = YNABClient(config["ynab"]["api_key"])
-    gocardless_client = GoCardlessClient(
+    gocardless_client = await GoCardlessClient.create(
         secret_id=config["gocardless"]["secret_id"],
         secret_key=config["gocardless"]["secret_key"]
     )
@@ -70,8 +66,6 @@ async def sync_transactions() -> Dict[str, int]:
             ynab_account_id
         )
 
-        click.echo(f"Transactions: {ynab_transactions}")
-
         if not ynab_transactions:
             continue
             
@@ -79,8 +73,6 @@ async def sync_transactions() -> Dict[str, int]:
             config["ynab"]["budget_id"],
             ynab_transactions
         )
-
-        click.echo(f"Result: {result}")
 
         total_added += len(result.get("transaction_ids", []))
     
