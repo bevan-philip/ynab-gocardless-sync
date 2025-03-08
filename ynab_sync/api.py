@@ -1,6 +1,7 @@
 import httpx
 import logging
 from typing import List, Dict, Any, Optional
+from dataclasses import dataclass, field
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -25,19 +26,23 @@ def log_and_raise_for_status(response: httpx.Response) -> None:
         # Re-raise the exception
         raise
 
+@dataclass
 class YNABClient:
-    BASE_URL = "https://api.ynab.com/v1"
-    
-    def __init__(self, api_key: str):
-        self.api_key = api_key
+    api_key: str
+    BASE_URL: str = "https://api.ynab.com/v1"
+
+    headers: Dict[str, str] = field(init=False)
+    client: httpx.AsyncClient = field(default_factory=httpx.AsyncClient(timeout=None))
+
+    def __post_init__(self):
         self.headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
     
     async def create_transactions(self, budget_id: str, transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Create transactions in YNAB."""
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.post(
                 f"{self.BASE_URL}/budgets/{budget_id}/transactions",
                 headers=self.headers,
@@ -46,20 +51,21 @@ class YNABClient:
             log_and_raise_for_status(response)
             return response.json()
 
+@dataclass
 class GoCardlessClient:
-    BASE_URL = "https://bankaccountdata.gocardless.com/api/v2"
-    
-    def __init__(self, secret_id: str, secret_key: str):
-        self.secret_id = secret_id
-        self.secret_key = secret_key
-        self.access_token = None
-        self.headers = {
-            "Content-Type": "application/json"
-        }
-    
-    async def get_access_token(self) -> str:
+    secret_id: str
+    secret_key: str
+
+    BASE_URL: str = "https://bankaccountdata.gocardless.com/api/v2"
+    headers: Dict[str, str] = field(default_factory=lambda: { "Content-Type": "application/json" })
+    client: httpx.AsyncClient = field(default_factory=httpx.AsyncClient(timeout=None))
+
+    def __post_init__(self):
+        self.get_access_token()
+
+    async def get_access_token(self) -> None:
         """Get a new access token using the secret credentials."""
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.post(
                 f"{self.BASE_URL}/token/new/",
                 headers=self.headers,
@@ -70,16 +76,12 @@ class GoCardlessClient:
             )
             log_and_raise_for_status(response)
             data = response.json()
-            self.access_token = data["access"]
-            self.headers["Authorization"] = f"Bearer {self.access_token}"
-            return self.access_token
+            self.headers["Authorization"] = f"Bearer {data['access']}"
 
     async def get_institutions(self, country_code: str = "gb") -> List[Dict[str, Any]]:
         """Get list of available financial institutions for a country."""
-        if not self.access_token:
-            await self.get_access_token()
             
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.get(
                 f"{self.BASE_URL}/institutions/",
                 headers=self.headers,
@@ -96,8 +98,6 @@ class GoCardlessClient:
         access_scope: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Create an end user agreement with custom terms."""
-        if not self.access_token:
-            await self.get_access_token()
             
         payload = {"institution_id": institution_id}
         if max_historical_days:
@@ -107,7 +107,7 @@ class GoCardlessClient:
         if access_scope:
             payload["access_scope"] = access_scope
 
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.post(
                 f"{self.BASE_URL}/agreements/enduser/",
                 headers=self.headers,
@@ -125,8 +125,6 @@ class GoCardlessClient:
         user_language: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create a requisition for account linking."""
-        if not self.access_token:
-            await self.get_access_token()
             
         payload = {
             "redirect": redirect_url,
@@ -141,7 +139,7 @@ class GoCardlessClient:
 
         print("we about to create a requisition")
 
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.post(
                 f"{self.BASE_URL}/requisitions/",
                 headers=self.headers,
@@ -152,10 +150,8 @@ class GoCardlessClient:
 
     async def get_requisition(self, requisition_id: str) -> Dict[str, Any]:
         """Get details of a specific requisition."""
-        if not self.access_token:
-            await self.get_access_token()
             
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.get(
                 f"{self.BASE_URL}/requisitions/{requisition_id}/",
                 headers=self.headers
@@ -170,14 +166,12 @@ class GoCardlessClient:
             account_id: The ID of the account to get transactions for
             date_from: Optional ISO 8601 format date to filter transactions from
         """
-        if not self.access_token:
-            await self.get_access_token()
             
         params = {}
         if date_from:
             params["date_from"] = date_from
 
-        async with httpx.AsyncClient(timeout=None) as client:
+        async with self.client as client:
             response = await client.get(
                 f"{self.BASE_URL}/accounts/{account_id}/transactions/",
                 headers=self.headers,
@@ -188,10 +182,8 @@ class GoCardlessClient:
 
     async def get_account_details(self, account_id: str) -> Dict[str, Any]:
         """Get details for a specific account."""
-        if not self.access_token:
-            await self.get_access_token()
             
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.get(
                 f"{self.BASE_URL}/accounts/{account_id}/",
                 headers=self.headers
@@ -201,10 +193,8 @@ class GoCardlessClient:
 
     async def get_account_balances(self, account_id: str) -> Dict[str, Any]:
         """Get balances for a specific account."""
-        if not self.access_token:
-            await self.get_access_token()
             
-        async with httpx.AsyncClient() as client:
+        async with self.client as client:
             response = await client.get(
                 f"{self.BASE_URL}/accounts/{account_id}/balances/",
                 headers=self.headers
