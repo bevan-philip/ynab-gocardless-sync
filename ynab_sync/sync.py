@@ -42,51 +42,36 @@ async def sync_transactions() -> Dict[str, int]:
     
     # Get last sync time
     last_sync = datetime.fromisoformat(config["last_sync"])
+    last_sync_iso = last_sync.date().isoformat()  # Format as YYYY-MM-DD for the API
     
-    # Create a requisition if we don't have one
-    if "requisition_id" not in config["gocardless"]:
-        requisition = await gocardless_client.create_requisition(
-            redirect_url=config["gocardless"]["redirect_url"],
-            institution_id=config["gocardless"]["institution_id"]
-        )
-        config["gocardless"]["requisition_id"] = requisition["id"]
-        # Save the requisition ID to config
-        save_config(config)
-        
-        # The user needs to complete authentication
-        click.echo(f"\nPlease complete authentication by visiting: {requisition['link']}")
-        click.echo("After authentication, run this command again to sync transactions.")
-        return {"added": 0}
-    
-    # Get requisition details to check status and get accounts
-    requisition = await gocardless_client.get_requisition(config["gocardless"]["requisition_id"])
-    
-    if not requisition.get("accounts"):
-        click.echo("No accounts found. Please complete authentication first.")
-        return {"added": 0}
-    
-    # Check if we have account mappings
+    # Get account mappings
     account_mappings = config.get("account_mappings", {})
-    if not account_mappings:
-        click.echo("No account mappings found. Please run 'ynab-sync map-accounts' first.")
-        return {"added": 0}
     
     # Fetch and process transactions for each mapped account
     total_added = 0
     for bank_account_id, ynab_account_id in account_mappings.items():
-        if bank_account_id not in requisition["accounts"]:
-            click.echo(f"Warning: Bank account {bank_account_id} not found in current session")
+        if ynab_account_id == "unmapped":
             continue
-            
-        transactions = await gocardless_client.get_account_transactions(bank_account_id)
+
+        click.echo(f"Fetching transactions for account {bank_account_id} since {last_sync_iso}")
+        
+        transactions = await gocardless_client.get_account_transactions(
+            bank_account_id,
+            date_from=last_sync_iso
+        )
+        
         if not transactions:
             continue
             
+        click.echo(f"Fetched transactions since {last_sync_iso} for account {bank_account_id}")
+        
         ynab_transactions = prepare_ynab_transactions(
             transactions,
             ynab_account_id
         )
-        
+
+        click.echo(f"Transactions: {ynab_transactions}")
+
         if not ynab_transactions:
             continue
             
@@ -94,7 +79,9 @@ async def sync_transactions() -> Dict[str, int]:
             config["ynab"]["budget_id"],
             ynab_transactions
         )
-        
+
+        click.echo(f"Result: {result}")
+
         total_added += len(result.get("transaction_ids", []))
     
     # Update last sync time on success

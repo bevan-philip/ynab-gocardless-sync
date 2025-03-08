@@ -163,15 +163,25 @@ class GoCardlessClient:
             log_and_raise_for_status(response)
             return response.json()
 
-    async def get_account_transactions(self, account_id: str) -> Dict[str, Any]:
-        """Get transactions for a specific account."""
+    async def get_account_transactions(self, account_id: str, date_from: Optional[str] = None) -> Dict[str, Any]:
+        """Get transactions for a specific account.
+        
+        Args:
+            account_id: The ID of the account to get transactions for
+            date_from: Optional ISO 8601 format date to filter transactions from
+        """
         if not self.access_token:
             await self.get_access_token()
             
-        async with httpx.AsyncClient() as client:
+        params = {}
+        if date_from:
+            params["date_from"] = date_from
+
+        async with httpx.AsyncClient(timeout=None) as client:
             response = await client.get(
                 f"{self.BASE_URL}/accounts/{account_id}/transactions/",
-                headers=self.headers
+                headers=self.headers,
+                params=params
             )
             log_and_raise_for_status(response)
             return response.json()
