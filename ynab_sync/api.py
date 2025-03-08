@@ -31,8 +31,8 @@ class YNABClient:
     api_key: str
     BASE_URL: str = "https://api.ynab.com/v1"
 
-    headers: Dict[str, str] = field(init=False)
-    client: httpx.AsyncClient = field(default_factory=httpx.AsyncClient(timeout=None))
+    headers: Dict[str, str] = field(default_factory=lambda: { "Content-Type": "application/json" })
+    client: httpx.AsyncClient = field(default_factory=lambda: httpx.AsyncClient(timeout=None))
 
     def __post_init__(self):
         self.headers = {
@@ -42,14 +42,13 @@ class YNABClient:
     
     async def create_transactions(self, budget_id: str, transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Create transactions in YNAB."""
-        async with self.client as client:
-            response = await client.post(
-                f"{self.BASE_URL}/budgets/{budget_id}/transactions",
-                headers=self.headers,
-                json={"transactions": transactions}
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.post(
+            f"{self.BASE_URL}/budgets/{budget_id}/transactions",
+            headers=self.headers,
+            json={"transactions": transactions}
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
 @dataclass
 class GoCardlessClient:
@@ -58,37 +57,38 @@ class GoCardlessClient:
 
     BASE_URL: str = "https://bankaccountdata.gocardless.com/api/v2"
     headers: Dict[str, str] = field(default_factory=lambda: { "Content-Type": "application/json" })
-    client: httpx.AsyncClient = field(default_factory=httpx.AsyncClient(timeout=None))
+    client: httpx.AsyncClient = field(default_factory=lambda: httpx.AsyncClient(timeout=None))
 
-    def __post_init__(self):
-        self.get_access_token()
+    @classmethod
+    async def create(cls, secret_id: str, secret_key: str):
+        instance = cls(secret_id, secret_key)
+        await instance.get_access_token()
+        return instance
 
     async def get_access_token(self) -> None:
         """Get a new access token using the secret credentials."""
-        async with self.client as client:
-            response = await client.post(
-                f"{self.BASE_URL}/token/new/",
-                headers=self.headers,
-                json={
+        response = await self.client.post(
+            f"{self.BASE_URL}/token/new/",
+            headers=self.headers,
+            json={
                     "secret_id": self.secret_id,
                     "secret_key": self.secret_key
                 }
-            )
-            log_and_raise_for_status(response)
-            data = response.json()
-            self.headers["Authorization"] = f"Bearer {data['access']}"
+        )
+        log_and_raise_for_status(response)
+        data = response.json()
+        self.headers["Authorization"] = f"Bearer {data['access']}"
 
     async def get_institutions(self, country_code: str = "gb") -> List[Dict[str, Any]]:
         """Get list of available financial institutions for a country."""
             
-        async with self.client as client:
-            response = await client.get(
-                f"{self.BASE_URL}/institutions/",
-                headers=self.headers,
-                params={"country": country_code}
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.get(
+            f"{self.BASE_URL}/institutions/",
+            headers=self.headers,
+            params={"country": country_code}
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
     async def create_end_user_agreement(
         self,
@@ -107,14 +107,13 @@ class GoCardlessClient:
         if access_scope:
             payload["access_scope"] = access_scope
 
-        async with self.client as client:
-            response = await client.post(
-                f"{self.BASE_URL}/agreements/enduser/",
-                headers=self.headers,
-                json=payload
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.post(
+            f"{self.BASE_URL}/agreements/enduser/",
+            headers=self.headers,
+            json=payload
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
     async def create_requisition(
         self,
@@ -139,25 +138,23 @@ class GoCardlessClient:
 
         print("we about to create a requisition")
 
-        async with self.client as client:
-            response = await client.post(
-                f"{self.BASE_URL}/requisitions/",
-                headers=self.headers,
-                json=payload
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.post(
+            f"{self.BASE_URL}/requisitions/",
+            headers=self.headers,
+            json=payload
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
     async def get_requisition(self, requisition_id: str) -> Dict[str, Any]:
         """Get details of a specific requisition."""
             
-        async with self.client as client:
-            response = await client.get(
-                f"{self.BASE_URL}/requisitions/{requisition_id}/",
-                headers=self.headers
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.get(
+            f"{self.BASE_URL}/requisitions/{requisition_id}/",
+            headers=self.headers
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
     async def get_account_transactions(self, account_id: str, date_from: Optional[str] = None) -> Dict[str, Any]:
         """Get transactions for a specific account.
@@ -171,33 +168,30 @@ class GoCardlessClient:
         if date_from:
             params["date_from"] = date_from
 
-        async with self.client as client:
-            response = await client.get(
-                f"{self.BASE_URL}/accounts/{account_id}/transactions/",
-                headers=self.headers,
-                params=params
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.get(
+            f"{self.BASE_URL}/accounts/{account_id}/transactions/",
+            headers=self.headers,
+            params=params
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
     async def get_account_details(self, account_id: str) -> Dict[str, Any]:
         """Get details for a specific account."""
             
-        async with self.client as client:
-            response = await client.get(
-                f"{self.BASE_URL}/accounts/{account_id}/",
-                headers=self.headers
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.get(
+            f"{self.BASE_URL}/accounts/{account_id}/",
+            headers=self.headers
+        )
+        log_and_raise_for_status(response)
+        return response.json()
 
     async def get_account_balances(self, account_id: str) -> Dict[str, Any]:
         """Get balances for a specific account."""
             
-        async with self.client as client:
-            response = await client.get(
-                f"{self.BASE_URL}/accounts/{account_id}/balances/",
-                headers=self.headers
-            )
-            log_and_raise_for_status(response)
-            return response.json()
+        response = await self.client.get(
+            f"{self.BASE_URL}/accounts/{account_id}/balances/",
+            headers=self.headers
+        )
+        log_and_raise_for_status(response)
+        return response.json()
