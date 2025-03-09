@@ -273,9 +273,9 @@ def map_accounts():
             if bank_account['balance']:
                 click.echo(f"  Balance: {bank_account['balance']['amount']} {bank_account['balance']['currency']}")
             ynab_account_id = click.prompt(
-                "Enter YNAB Account ID for this bank account",
+                "Enter YNAB Account ID for this bank account (use unmapped if you want to ignore this account)",
                 type=str,
-                default=account_mappings.get(bank_account["id"])
+                default="unmapped"
             )
             if ynab_account_id:
                 account_mappings[bank_account["id"]] = ynab_account_id
