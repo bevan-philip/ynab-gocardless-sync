@@ -2,6 +2,7 @@ import click
 import asyncio
 import logging
 from typing import Optional, Dict, Any
+from datetime import datetime, timedelta, UTC
 
 from .logging_config import configure_logging
 from .config import load_config, save_config
@@ -96,6 +97,13 @@ def configure():
         "GoCardless Secret Key",
         default=config.get("gocardless", {}).get("secret_key", ""),
     )
+    
+    # Last Sync Configuration
+    click.echo("\n=== Sync Configuration ===")
+    last_sync_str = click.prompt(
+        "Last Sync Date (YYYY-MM-DD format, e.g. 2023-01-01)",
+        default=config.get("last_sync", (datetime.now(UTC) - timedelta(days=7)).date().isoformat())
+    )
    
     # Update config
     config["ynab"] = {
@@ -106,6 +114,7 @@ def configure():
         "secret_id": gocardless_secret_id,
         "secret_key": gocardless_secret_key,
     }
+    config["last_sync"] = last_sync_str
     
     # Save config
     save_config(config)

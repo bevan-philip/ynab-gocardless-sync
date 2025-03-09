@@ -37,8 +37,7 @@ async def sync_transactions() -> Dict[str, int]:
     )
     
     # Get last sync time
-    last_sync = datetime.fromisoformat(config["last_sync"])
-    last_sync_iso = last_sync.date().isoformat()  # Format as YYYY-MM-DD for the API
+    last_sync = config["last_sync"]  # Already in YYYY-MM-DD format
     
     # Get account mappings
     account_mappings = config.get("account_mappings", {})
@@ -49,17 +48,17 @@ async def sync_transactions() -> Dict[str, int]:
         if ynab_account_id == "unmapped":
             continue
 
-        click.echo(f"Fetching transactions for account {bank_account_id} since {last_sync_iso}")
+        click.echo(f"Fetching transactions for account {bank_account_id} since {last_sync}")
         
         transactions = await gocardless_client.get_account_transactions(
             bank_account_id,
-            date_from=last_sync_iso
+            date_from=last_sync
         )
         
         if not transactions:
             continue
             
-        click.echo(f"Fetched transactions since {last_sync_iso} for account {bank_account_id}")
+        click.echo(f"Fetched transactions since {last_sync} for account {bank_account_id}")
         
         ynab_transactions = prepare_ynab_transactions(
             transactions,

@@ -1,7 +1,7 @@
 import os
 import yaml
 import keyring
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".ynab_sync"
@@ -17,7 +17,7 @@ def load_config():
     
     if not CONFIG_FILE.exists():
         return {
-            "last_sync": (datetime.utcnow() - timedelta(days=7)).isoformat(),
+            "last_sync": (datetime.utcnow() - timedelta(days=7)).date().isoformat(),
             "ynab": {
                 "budget_id": None,
                 "account_id": None,
@@ -62,5 +62,5 @@ def save_config(config):
 def update_last_sync():
     """Update the last sync time in the configuration."""
     config = load_config()
-    config["last_sync"] = datetime.utcnow().isoformat()
+    config["last_sync"] = datetime.now(UTC).date().isoformat()
     save_config(config) 
