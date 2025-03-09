@@ -1,0 +1,7 @@
+---
+description: 
+globs: *.md
+alwaysApply: false
+---
+- Do not attempt to update the README.
+- README.md is not to be modified.
