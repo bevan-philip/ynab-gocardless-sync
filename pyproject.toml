@@ -16,4 +16,3 @@ dependencies = [
 
 [project.scripts]
 ynab-sync = "ynab_sync:cli"
-
