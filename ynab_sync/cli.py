@@ -96,11 +96,7 @@ def configure():
         "GoCardless Secret Key",
         default=config.get("gocardless", {}).get("secret_key", ""),
     )
-    gocardless_redirect_url = click.prompt(
-        "GoCardless Redirect URL",
-        default=config.get("gocardless", {}).get("redirect_url", "https://localhost")
-    )
-    
+   
     # Update config
     config["ynab"] = {
         "api_key": ynab_api_key,
@@ -109,7 +105,6 @@ def configure():
     config["gocardless"] = {
         "secret_id": gocardless_secret_id,
         "secret_key": gocardless_secret_key,
-        "redirect_url": gocardless_redirect_url
     }
     
     # Save config
@@ -198,7 +193,7 @@ def add_connection():
         
         # Create a requisition
         requisition = asyncio.run(client.create_requisition(
-            redirect_url=config["gocardless"]["redirect_url"],
+            redirect_url="https://localhost",
             institution_id=selected_institution["id"]
         ))
         
