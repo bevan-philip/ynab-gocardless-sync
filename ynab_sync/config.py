@@ -17,7 +17,7 @@ def load_config():
     
     if not CONFIG_FILE.exists():
         return {
-            "last_sync": (datetime.utcnow() - timedelta(days=7)).date().isoformat(),
+            "last_sync": (datetime.now(UTC) - timedelta(days=7)).date().isoformat(),
             "ynab": {
                 "budget_id": None,
                 "account_id": None,
