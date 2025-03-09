@@ -13,9 +13,15 @@ A command-line tool to automatically sync bank transactions from Chase (via GoCa
 
 1. Clone this repository
 2. Install dependencies:
-   ```bash
-   pip install -e .
-   ```
+
+```bash
+uv sync
+```
+
+## To run,
+```bash
+uv run -m ynab_sync --help
+```
 
 ## Configuration
 
@@ -38,15 +44,3 @@ To sync transactions:
 ```bash
 ynab-sync sync
 ```
-
-## Development
-
-This project uses Python 3.13+ and the following key dependencies:
-- httpx: For HTTP API calls
-- keyring: For secure credential storage
-- pyyaml: For configuration files
-- click: For CLI interface
-
-## License
-
-MIT License
