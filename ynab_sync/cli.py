@@ -75,7 +75,7 @@ def configure():
     """Configure API keys and settings."""
     # Load existing config
     config = load_config()
-    
+
     # YNAB Configuration
     click.echo("\n=== YNAB Configuration ===")
     ynab_api_key = click.prompt(
@@ -104,18 +104,13 @@ def configure():
         "Last Sync Date (YYYY-MM-DD format, e.g. 2023-01-01)",
         default=config.get("last_sync", (datetime.now(UTC) - timedelta(days=7)).date().isoformat())
     )
-   
-    # Update config
-    config["ynab"] = {
-        "api_key": ynab_api_key,
-        "budget_id": ynab_budget_id
-    }
-    config["gocardless"] = {
-        "secret_id": gocardless_secret_id,
-        "secret_key": gocardless_secret_key,
-    }
+
+    config["ynab"]["api_key"] = ynab_api_key
+    config["ynab"]["budget_id"] = ynab_budget_id
+    config["gocardless"]["secret_id"] = gocardless_secret_id
+    config["gocardless"]["secret_key"] = gocardless_secret_key
     config["last_sync"] = last_sync_str
-    
+   
     # Save config
     save_config(config)
     click.echo("\nConfiguration saved successfully!")
