@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from ynab_sync.api import YNABClient, GoCardlessClient
 
@@ -12,7 +12,7 @@ from ynab_sync.api import YNABClient, GoCardlessClient
 def mock_config():
     """Mock configuration for testing."""
     return {
-        "last_sync": (datetime.utcnow() - timedelta(days=7)).isoformat(),
+        "last_sync": (datetime.now(UTC) - timedelta(days=7)).isoformat(),
         "ynab": {
             "api_key": "test_api_key",
             "budget_id": "test_budget_id",
@@ -64,12 +64,4 @@ def sample_bank_transactions():
             ],
             "pending": []
         }
-    }
-
-
-@pytest.fixture
-def event_loop():
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close() 
+    } 
