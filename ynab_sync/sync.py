@@ -74,7 +74,7 @@ async def sync_transactions() -> Dict[str, int]:
             ynab_transactions
         )
 
-        total_added += len(result.get("transaction_ids", []))
+        total_added += len(ynab_transactions)
     
     # Update last sync time on success
     update_last_sync()
