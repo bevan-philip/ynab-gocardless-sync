@@ -136,8 +136,6 @@ class GoCardlessClient:
         if user_language:
             payload["user_language"] = user_language
 
-        print("we about to create a requisition")
-
         response = await self.client.post(
             f"{self.BASE_URL}/requisitions/",
             headers=self.headers,
